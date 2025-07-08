@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Absensi Siswa (Dropdown)</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    select, button { padding: 10px; font-size: 16px; }
+    .row { margin-bottom: 10px; }
+    button { background: green; color: white; border: none; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Absensi Siswa</h2>
+
+  <label>Pilih Kelas:</label>
+    <select id="kelas">
+        <option value="">-- Pilih --</option>
+        <option value="10A">10A</option>
+        <option value="10B">10B</option>
+        <option value="10C">10C</option> <!-- Tambahan kelas -->
+    </select>
+
+
+  <div id="formContainer"></div>
+
+  <button onclick="tambahBaris()">+ Tambah Siswa Tidak Hadir</button>
+  <br><br>
+  <button onclick="kirim()">Kirim Absensi</button>
+  <p id="status"></p>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyqNM6jdalGunPDyVLVjSmL90jU28Aqwl10tj6yHGxz7jqMAMs2n7K9XaQ-JB_c76hx6Q/exec';
+    let namaSiswa = [];
+
+    document.getElementById('kelas').addEventListener('change', function () {
+      const kelas = this.value;
+      if (!kelas) return;
+      fetch(`${scriptURL}?kelas=${kelas}`)
+        .then(res => res.json())
+        .then(data => {
+          namaSiswa = data;
+          document.getElementById('formContainer').innerHTML = '';
+          tambahBaris(); // Tambahkan satu baris pertama
+        });
+    });
+
+    function tambahBaris() {
+      if (namaSiswa.length === 0) return;
+      const container = document.getElementById('formContainer');
+      const row = document.createElement('div');
+      row.classList.add('row');
+      row.innerHTML = `
+        <select class="nama">
+          <option value="">-- Pilih Siswa --</option>
+          ${namaSiswa.map(n => `<option value="${n}">${n}</option>`).join('')}
+        </select>
+        <select class="alasan">
+          <option value="Sakit">Sakit</option>
+          <option value="Izin">Izin</option>
+          <option value="Alpa">Alpa</option>
+        </select>
+      `;
+      container.appendChild(row);
+    }
+
+    function kirim() {
+      const kelas = document.getElementById('kelas').value;
+      const namaSelects = document.querySelectorAll('.nama');
+      const alasanSelects = document.querySelectorAll('.alasan');
+
+      const tidakHadir = [];
+      for (let i = 0; i < namaSelects.length; i++) {
+        const nama = namaSelects[i].value;
+        const alasan = alasanSelects[i].value;
+        if (nama) {
+          tidakHadir.push({ nama, alasan });
+        }
+      }
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify({ kelas, tidakHadir }),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(() => {
+        document.getElementById('status').innerText = "Absensi dikirim!";
+      })
+      .catch(() => {
+        document.getElementById('status').innerText = "Gagal mengirim.";
+      });
+    }
+  </script>
+</body>
+</html>
